@@ -5,17 +5,38 @@ import sys
 from enum import Enum
 
 #--- GAUSSIAN BLUR (MOTION) --- #
-def gaussian_blur(img,kernel_size):
-    blur_std = kernel_size/4
-    blur_img = cv2.GaussianBlur(img,(kernel_size,kernel_size),blur_std)
+# Following recommendation that kernel size should be approx 6*sigma
+# i.e., to cover at least 3 standard deviations in ecah direction,
+# above 4 std-devs, the value of filter is very close to zero
+def gaussian_blur(img,std_dev,kernel_size=None):
+    if kernel_size == None:
+        opt_kernel_size = int(6*std_dev)
+        kernel_size= opt_kernel_size if (opt_kernel_size%2) else (opt_kernel_size-1)
+    blur_img = cv2.GaussianBlur(img,(kernel_size,kernel_size),std_dev)
+
     return blur_img
 #--- ---#
+
+#--- BRIGHTNESS SHIFT --- #
+# Apply multiplicative scaling to each channel
+def brightness_shift(img,scaling_factor):
+    saturated_img = img*scaling_factor
+    overshoot_vals = np.argwhere(saturated_img > 255)
+    overdamped_vals = np.argwhere(saturated_img < 0)
+    for i,j,k in overshoot_vals:
+        saturated_img[i,j,k] = 255
+    for i,j in overdamped_vals:
+        saturated_img[i,j,k] = 0
+    
+    saturated_img = saturated_img.astype(dtype='uint8')
+
+    return saturated_img
 
 #--- GAUSSIAN NOISE PER CHANNEL --- #
 #functions to use for adding noise to RGB channels
 def add_noiseToChannel(img_channel, noise):
     noisy_channel = img_channel + noise
-    minval,maxval,minloc,maxloc = cv2.minMaxLoc(noisy_channel)
+    #minval,maxval,minloc,maxloc = cv2.minMaxLoc(noisy_channel)
     overshoot_vals = np.argwhere(noisy_channel > 255)
     overdamped_vals = np.argwhere(noisy_channel < 0)
     for i,j in overshoot_vals:
@@ -40,7 +61,7 @@ def add_gaussNoisePerChannel(img,noise_std):
 #--- ---#
 
 #--- CHANGE IMAGE CONTRAST --- #
-def change_contrast(img,alpha):
+def alpha_blend(img,alpha):
     beta = 1 - alpha
     gray_cnst = 153
     gray_bgr_img = np.ones(img.shape,dtype='uint8')*gray_cnst
