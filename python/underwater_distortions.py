@@ -61,11 +61,24 @@ def add_gaussNoisePerChannel(img,noise_std):
 #--- ---#
 
 #--- CHANGE IMAGE CONTRAST --- #
-def alpha_blend(img,alpha):
-    beta = 1 - alpha
-    gray_cnst = 153
-    gray_bgr_img = np.ones(img.shape,dtype='uint8')*gray_cnst
-    contrast_img = cv2.addWeighted(img,alpha,gray_bgr_img, beta,0)
+# For underwater we create a mask based on Jerlov light attenuation conditions
+# instead of the classic gray fog. 
+def alpha_blend(img,alpha,water_type):
+    beta = 1 - alpha #weight factors
+    fix_depth = 5. # fix depth in meters
+    #diffuse downwelling attenuation coefficient
+    #depending on Jerlov water type for B,G,R wavelengths (475,550,700)[nm]
+    Kd_dict = {'II':[0.0619,0.0998,0.580],'III':[0.117,0.145,0.616],'1C':[0.134,0.145,0.616]}
+
+    #gray_cnst = 153 This value can be used to create in-air fog (gray)
+    #gray_bgr_img = np.ones(img.shape,dtype='uint8')*gray_cnst
+    mask_img = np.ones(img.shape,dtype='float32')*255.
+    for c in range(0,3):
+        mask_img[:,:,c] = mask_img[:,:,c] * np.exp(-Kd_dict[water_type][c]*fix_depth)
+    
+    mask_img = mask_img.astype(dtype='uint8')
+    contrast_img = cv2.addWeighted(img,alpha,mask_img, beta,0)
+
     return contrast_img
 #--- ---#
 
