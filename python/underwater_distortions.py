@@ -110,7 +110,7 @@ class CompressionType(Enum):
     PNG = 1
     WEBP = 2
     
-def compress_img_fnc(img, comp_type, comp_val):
+def compress_img(img, comp_type, comp_val):
     comp_img = np.zeros(img.size, dtype=img.dtype)
     tmp_file = './compression_test'
     if CompressionType.JPEG == comp_type:
