@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from matplotlib import pyplot as plt
 import sys
+import os
 from enum import Enum
 
 #--- GAUSSIAN BLUR (MOTION) --- #
@@ -82,6 +83,27 @@ def alpha_blend(img,alpha,water_type):
     return contrast_img
 #--- ---#
 
+#--- WHITE BALANCE --- #
+class WhiteBalanceType(Enum):
+    GRAYWORLD = 0
+    SIMPLEWB = 1
+
+def white_balance(img, wb_type, sat_thresh=None, pix_thresh=None):
+    wb_img = np.zeros(img.size, dtype=img.dtype)
+    if WhiteBalanceType.GRAYWORLD == wb_type:
+        wb = cv2.xphoto.createGrayworldWB()
+        wb.setSaturationThreshold(sat_thresh)
+        wb_img = wb.balanceWhite(img)
+    elif WhiteBalanceType.SIMPLEWB == wb_type:
+        wb = cv2.xphoto.createSimpleWB()
+        wb.setP(pix_thresh)
+        wb_img = wb.balanceWhite(img)
+    else:
+        sys.stdout.write("NO WHITE BALANCE METHOD FOUND")
+    
+    return wb_img
+#--- ---#
+
 #--- IMAGE COMPRESSION --- #
 class CompressionType(Enum):
     JPEG = 0
@@ -90,15 +112,19 @@ class CompressionType(Enum):
     
 def compress_img_fnc(img, comp_type, comp_val):
     comp_img = np.zeros(img.size, dtype=img.dtype)
+    tmp_file = './compression_test'
     if CompressionType.JPEG == comp_type:
-        cv2.imwrite('/tmp/dump/compression_test.jpg',img, [cv2.IMWRITE_JPEG_QUALITY,comp_val])
-        comp_img = cv2.imread('/tmp/dump/compression_test.jpg', cv2.IMREAD_COLOR)
+        cv2.imwrite((tmp_file+'.jpg'),img, [cv2.IMWRITE_JPEG_QUALITY,comp_val])
+        comp_img = cv2.imread((tmp_file+'.jpg'), cv2.IMREAD_COLOR)
+        os.remove((tmp_file+'.jpg'))
     elif CompressionType.PNG == comp_type:
-        cv2.imwrite('/tmp/dump/compression_test.png',img, [cv2.IMWRITE_PNG_COMPRESSION,comp_val])
-        comp_img = cv2.imread('/tmp/dump/compression_test.png', cv2.IMREAD_COLOR)
+        cv2.imwrite((tmp_file+'.png'),img, [cv2.IMWRITE_PNG_COMPRESSION,comp_val])
+        comp_img = cv2.imread((tmp_file+'.png'), cv2.IMREAD_COLOR)
+        os.remove((tmp_file+'.png'))
     elif CompressionType.WEBP == comp_type:
-        cv2.imwrite('/tmp/dump/compression_test.webp',img, [cv2.IMWRITE_WEBP_QUALITY,comp_val])
-        comp_img = cv2.imread('/tmp/dump/compression_test.webp', cv2.IMREAD_COLOR)
+        cv2.imwrite((tmp_file+'.webp'),img, [cv2.IMWRITE_WEBP_QUALITY,comp_val])
+        comp_img = cv2.imread((tmp_file+'.webp'), cv2.IMREAD_COLOR)
+        os.remove((tmp_file+'.webp'))
     else:
         sys.stdout.write("NO COMPRESSION TYPE FOUND")
     return comp_img
