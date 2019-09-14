@@ -22,14 +22,17 @@ def gaussian_blur(img,std_dev,kernel_size=None):
 # Apply multiplicative scaling to each channel
 def brightness_shift(img,scaling_factor):
     saturated_img = img*scaling_factor
-    overshoot_vals = np.argwhere(saturated_img > 255)
-    overdamped_vals = np.argwhere(saturated_img < 0)
-    for i,j,k in overshoot_vals:
-        saturated_img[i,j,k] = 255
-    for i,j in overdamped_vals:
-        saturated_img[i,j,k] = 0
-    
-    saturated_img = saturated_img.astype(dtype='uint8')
+    tmp_flat = saturated_img.flatten()
+    overshoot_vals = np.argwhere(tmp_flat > 255)
+    overdamped_vals = np.argwhere(tmp_flat < 0)
+    # for i,j,k in overshoot_vals:
+    #     saturated_img[i,j,k] = 255
+    # for i,j in overdamped_vals:
+    #     saturated_img[i,j,k] = 0
+    np.put(tmp_flat,overshoot_vals,255.)
+    np.put(tmp_flat,overdamped_vals,0.)
+
+    saturated_img = tmp_flat.reshape(img.shape).astype(dtype='uint8')
 
     return saturated_img
 
